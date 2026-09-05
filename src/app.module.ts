@@ -135,6 +135,8 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
           const schema = configService.get<string>('dataDatabase.schema', 'public');
           const sslEnabled = configService.get<boolean>('dataDatabase.ssl', true);
           const sslReject = configService.get<boolean>('dataDatabase.sslRejectUnauthorized', false);
+          const isVercel = Boolean(process.env.VERCEL || process.env.NOW_BUILDER);
+          const synchronize = configService.get<boolean>('database.synchronize', !isVercel);
           return {
             name: 'main',
             type: 'postgres' as const,
@@ -150,7 +152,8 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
               __dirname + '/modules/audit/**/*.entity{.ts,.js}',
             ],
             migrations: [__dirname + '/database/migrations-main/*{.ts,.js}'],
-            synchronize: true,
+            synchronize: isVercel ? false : synchronize,
+            connectTimeoutMS: 5000,
             logging: configService.get<boolean>('database.logging', false),
           };
         }
