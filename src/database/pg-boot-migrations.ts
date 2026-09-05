@@ -44,9 +44,9 @@ export async function createBootDataSource(
   const createDataSource = deps.createDataSource ?? (opts => new DataSource(opts));
   const createLockClient = deps.createLockClient ?? (config => new Client(config));
 
-  if (options?.type !== 'postgres' || Boolean(process.env.VERCEL || process.env.NOW_BUILDER)) {
-    // On Vercel serverless (or non-postgres), skip advisory lock + runtime migrations on cold boot
-    const dataSource = createDataSource({ ...options, migrationsRun: false });
+  if (!options || options.type !== 'postgres' || Boolean(process.env.VERCEL || process.env.NOW_BUILDER)) {
+    const opts = options ? { ...options, migrationsRun: false } : (options as unknown as DataSourceOptions);
+    const dataSource = createDataSource(opts);
     await dataSource.initialize();
     return dataSource;
   }
