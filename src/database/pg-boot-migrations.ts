@@ -44,10 +44,11 @@ export async function createBootDataSource(
   const createDataSource = deps.createDataSource ?? (opts => new DataSource(opts));
   const createLockClient = deps.createLockClient ?? (config => new Client(config));
 
-  if (options?.type !== 'postgres') {
-    // useFactory always resolves a full options object; the optional parameter is the library's
-    // defensive typing, not a state this connection can actually boot in.
-    return createDataSource(options as DataSourceOptions);
+  if (options?.type !== 'postgres' || Boolean(process.env.VERCEL || process.env.NOW_BUILDER)) {
+    // On Vercel serverless (or non-postgres), skip advisory lock + runtime migrations on cold boot
+    const dataSource = createDataSource({ ...options, migrationsRun: false });
+    await dataSource.initialize();
+    return dataSource;
   }
 
   // This connection's migrations run HERE, under the lock — neutralize migrationsRun so the

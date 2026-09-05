@@ -210,32 +210,28 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
           // lands in the configured schema.
           const schema = configService.get<string>('dataDatabase.schema', 'public');
           const useCustomSearchPath = schema && schema !== 'public';
-          return {
-            ...baseConfig,
-            name: 'data',
-            type: 'postgres' as const,
-            schema,
-            host: configService.get<string>('dataDatabase.host'),
-            port: configService.get<number>('dataDatabase.port'),
-            username: configService.get<string>('dataDatabase.username'),
-            password: configService.get<string>('dataDatabase.password'),
-            database: configService.get<string>('dataDatabase.name', 'openwa'),
+            const isVercel = Boolean(process.env.VERCEL || process.env.NOW_BUILDER);
+            return {
+              ...baseConfig,
+              name: 'data',
+              type: 'postgres' as const,
+              schema,
+              host: configService.get<string>('dataDatabase.host'),
+              port: configService.get<number>('dataDatabase.port'),
+              username: configService.get<string>('dataDatabase.username'),
+              password: configService.get<string>('dataDatabase.password'),
+              database: configService.get<string>('dataDatabase.name', 'openwa'),
 
-            ssl: configService.get<boolean>('dataDatabase.ssl', false)
-              ? {
-                  rejectUnauthorized: configService.get<boolean>('dataDatabase.sslRejectUnauthorized', true),
-                }
-              : false,
+              ssl: configService.get<boolean>('dataDatabase.ssl', false)
+                ? {
+                    rejectUnauthorized: configService.get<boolean>('dataDatabase.sslRejectUnauthorized', true),
+                  }
+                : false,
 
-            // Never auto-sync Postgres in production; rely on migrations. Boot migrations execute
-            // inside createBootDataSource (dataSourceFactory above) under the advisory lock — this
-            // flag states the intent and remains the built-in fallback if that factory is ever
-            // bypassed (the factory constructs the DataSource with migrationsRun:false and calls
-            // runMigrations() itself while holding the lock).
-            synchronize: configService.get<boolean>('dataDatabase.synchronize', false),
-            migrationsRun: true,
-            retryAttempts: 10,
-            retryDelay: 3000,
+              synchronize: configService.get<boolean>('dataDatabase.synchronize', false),
+              migrationsRun: !isVercel,
+              retryAttempts: isVercel ? 1 : 10,
+              retryDelay: isVercel ? 500 : 3000,
             extra: {
               max: configService.get<number>('dataDatabase.poolSize', 10),
               // Runtime query/pool timeouts so a stuck query or saturated pool fails fast instead of
