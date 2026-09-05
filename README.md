@@ -270,6 +270,11 @@ docker compose --profile full up -d
 > - `linux/amd64`
 > - `linux/arm64`
 
+### 🚀 Vercel Deployment
+
+You can deploy the OpenWA Dashboard SPA directly on **Vercel** with global CDN hosting.
+See the complete [Vercel Deployment Guide (`docs/32-vercel-deployment.md`)](./docs/32-vercel-deployment.md) for step-by-step setup using Vercel CLI or GitHub integration.
+
 ## 🔌 Ports
 
 | Service         | Port            | Description                                                                         |

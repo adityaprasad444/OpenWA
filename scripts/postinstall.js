@@ -158,6 +158,15 @@ function planSteps(root, env = process.env) {
       options: { stdio: 'inherit', cwd: root, env: cleanEnv },
     });
   }
+  const puppeteerBrowsersPatcher = path.join(root, 'scripts', 'patch-puppeteer-browsers.js');
+  if (fs.existsSync(puppeteerBrowsersPatcher)) {
+    steps.push({
+      name: 'Puppeteer @puppeteer/browsers ESM CJS repair (scripts/patch-puppeteer-browsers.js)',
+      command: process.execPath,
+      args: [puppeteerBrowsersPatcher],
+      options: { stdio: 'inherit', cwd: root, env: cleanEnv },
+    });
+  }
   return steps;
 }
 

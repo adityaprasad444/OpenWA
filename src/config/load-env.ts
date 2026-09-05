@@ -21,13 +21,17 @@ import { clearBlankEnv, recordOsEnvKeys, recordPinnedEnvKeys, BLANK_SHADOWED_ENV
  * body would run too late: ES imports are hoisted and the whole module graph evaluates before the body.
  */
 export function loadEnvironment(): void {
-  const generatedEnvPath = path.resolve(process.cwd(), 'data', '.env.generated');
+  const dataDir = process.env.OPENWA_DATA_DIR || path.resolve(process.cwd(), 'data');
+  const generatedEnvPath = path.join(dataDir, '.env.generated');
   const userEnvPath = path.resolve(process.cwd(), '.env');
 
   // Ensure data directory exists
-  const dataDir = path.dirname(generatedEnvPath);
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+    try {
+      fs.mkdirSync(dataDir, { recursive: true });
+    } catch {
+      /* ignore read-only filesystem errors in serverless environments */
+    }
   }
 
   // Tighten any pre-existing secret files written before per-file 0600 perms (best-effort) — the

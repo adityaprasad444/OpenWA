@@ -28,5 +28,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "exclude": ["node_modules", "dist", "dashboard"],
-  "include": ["src", "test"]
+  "include": ["src", "test", "api"]
 }

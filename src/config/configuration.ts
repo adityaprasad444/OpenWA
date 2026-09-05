@@ -170,38 +170,47 @@ export default () => ({
   },
 
   // Data Storage Database configuration (pluggable: SQLite, PostgreSQL, etc.)
-  dataDatabase: {
-    type: process.env.DATABASE_TYPE || 'sqlite',
-    // SQLite path (used when type is sqlite)
-    database: process.env.DATABASE_NAME || './data/openwa.sqlite',
-    // Postgres database NAME (used when type is postgres). Resolved from the same
-    // DATABASE_NAME env as the migration CLI (data-source.ts) so the runtime factory and
-    // migrations never target different databases. Distinct sqlite-vs-pg defaults.
-    name: process.env.DATABASE_NAME || 'openwa',
-    // PostgreSQL schema (used when type is postgres). Default 'public' preserves the historical
-    // behavior; set POSTGRES_SCHEMA to place OpenWA's tables + the TypeORM migration ledger in a
-    // dedicated schema (e.g. a managed-Postgres project schema, or to isolate OpenWA from other
-    // apps sharing the database). The schema must already exist — a missing one fails fast at
-    // migration time rather than silently falling back to public. SQLite ignores this.
-    schema: process.env.POSTGRES_SCHEMA || 'public',
-    // PostgreSQL/MySQL connection (used when type is postgres/mysql)
-    host: process.env.DATABASE_HOST || 'localhost',
-    port: parseInt(process.env.DATABASE_PORT || '5432', 10),
-    username: process.env.DATABASE_USERNAME,
-    password: process.env.DATABASE_PASSWORD,
-    synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
-    logging: process.env.DATABASE_LOGGING === 'true',
-    // Connection pooling (PostgreSQL)
-    poolSize: parseInt(process.env.DATABASE_POOL_SIZE || '10', 10),
-    // Pool/query timeouts (PostgreSQL). statement_timeout is server-side per query; idle/connection
-    // are pool-side. Set any to 0 to disable. Applied to the runtime connection only (see app.module).
-    statementTimeoutMs: parseInt(process.env.DATABASE_STATEMENT_TIMEOUT_MS || '30000', 10),
-    idleTimeoutMs: parseInt(process.env.DATABASE_IDLE_TIMEOUT_MS || '30000', 10),
-    connectionTimeoutMs: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT_MS || '10000', 10),
-    // SSL configuration
-    ssl: process.env.DATABASE_SSL === 'true',
-    sslRejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== 'false',
-  },
+  dataDatabase: (() => {
+    const dbUrl = process.env.DATABASE_URL;
+    let urlParts: { host?: string; port?: number; username?: string; password?: string; name?: string } = {};
+    if (dbUrl) {
+      try {
+        const u = new URL(dbUrl);
+        urlParts = {
+          host: u.hostname,
+          port: u.port ? parseInt(u.port, 10) : 5432,
+          username: decodeURIComponent(u.username),
+          password: decodeURIComponent(u.password),
+          name: u.pathname ? u.pathname.replace(/^\//, '') : undefined,
+        };
+      } catch {
+        // Fallthrough if parsing fails
+      }
+    }
+    const detectedType =
+      dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))
+        ? 'postgres'
+        : process.env.DATABASE_TYPE || 'sqlite';
+
+    return {
+      type: detectedType,
+      database: process.env.DATABASE_NAME || urlParts.name || './data/openwa.sqlite',
+      name: process.env.DATABASE_NAME || urlParts.name || 'openwa',
+      schema: process.env.POSTGRES_SCHEMA || 'public',
+      host: process.env.DATABASE_HOST || urlParts.host || 'localhost',
+      port: parseInt(process.env.DATABASE_PORT || (urlParts.port ? String(urlParts.port) : '5432'), 10),
+      username: process.env.DATABASE_USERNAME || urlParts.username,
+      password: process.env.DATABASE_PASSWORD || urlParts.password,
+      synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
+      logging: process.env.DATABASE_LOGGING === 'true',
+      poolSize: parseInt(process.env.DATABASE_POOL_SIZE || '10', 10),
+      statementTimeoutMs: parseInt(process.env.DATABASE_STATEMENT_TIMEOUT_MS || '30000', 10),
+      idleTimeoutMs: parseInt(process.env.DATABASE_IDLE_TIMEOUT_MS || '30000', 10),
+      connectionTimeoutMs: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT_MS || '10000', 10),
+      ssl: process.env.DATABASE_SSL === 'true' || Boolean(dbUrl),
+      sslRejectUnauthorized: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'true',
+    };
+  })(),
 
   // WhatsApp engine configuration
   engine: {

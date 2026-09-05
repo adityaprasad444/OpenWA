@@ -1,0 +1,18 @@
+# Documentation & tests
+docs/
+test/
+charts/
+sdk/
+*.md
+
+# Local data & temp files
+data/
+data/*
+.gemini/
+.vscode/
+
+# Container configs
+Dockerfile
+docker-compose*.yml
+docker-entrypoint.sh
+openapi.json

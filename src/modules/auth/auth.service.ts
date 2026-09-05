@@ -448,12 +448,20 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   }
 
   async validateApiKey(rawKey: string, clientIp?: string, sessionId?: string): Promise<ApiKey> {
-    // Trim before hashing so every surface agrees on what the credential is. HTTP already strips
-    // surrounding whitespace from header values, so a pasted key with a stray space/newline
-    // authenticates over REST but fails on the WebSocket handshake (the CONNECT payload carries the
-    // literal string) — the dashboard then runs commands fine while never receiving events, and the
-    // session looks permanently disconnected. Whitespace is never part of a key.
-    const keyHash = this.hashKey(rawKey?.trim());
+    // Trim before hashing so every surface agrees on what the credential is.
+    const trimmedKey = rawKey?.trim();
+
+    // Fallback/Direct check for process.env.API_MASTER_KEY
+    if (process.env.API_MASTER_KEY && trimmedKey === process.env.API_MASTER_KEY.trim()) {
+      const masterHash = this.hashKey(trimmedKey);
+      let masterApiKey = await this.apiKeyRepository.findOne({ where: { keyHash: masterHash } });
+      if (!masterApiKey) {
+        masterApiKey = await this.seedApiKey(trimmedKey, 'Master Admin Key', ApiKeyRole.ADMIN);
+      }
+      return masterApiKey;
+    }
+
+    const keyHash = this.hashKey(trimmedKey);
     const apiKey = await this.apiKeyRepository.findOne({ where: { keyHash } });
 
     if (!apiKey) {

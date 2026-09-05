@@ -130,9 +130,31 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        // Default ON for zero-config first boot. When disabled
-        // (MAIN_DATABASE_SYNCHRONIZE=false), the main-owned migrations create the
-        // api_keys/audit_logs schema instead — never both at once.
+        const dbType = configService.get<'sqlite' | 'postgres'>('dataDatabase.type', 'sqlite');
+        if (dbType === 'postgres') {
+          const schema = configService.get<string>('dataDatabase.schema', 'public');
+          const sslEnabled = configService.get<boolean>('dataDatabase.ssl', true);
+          const sslReject = configService.get<boolean>('dataDatabase.sslRejectUnauthorized', false);
+          return {
+            name: 'main',
+            type: 'postgres' as const,
+            host: configService.get<string>('dataDatabase.host', 'localhost'),
+            port: configService.get<number>('dataDatabase.port', 5432),
+            username: configService.get<string>('dataDatabase.username'),
+            password: configService.get<string>('dataDatabase.password'),
+            database: configService.get<string>('dataDatabase.name', 'openwa'),
+            schema: schema,
+            ssl: sslEnabled ? { rejectUnauthorized: sslReject } : false,
+            entities: [
+              __dirname + '/modules/auth/**/*.entity{.ts,.js}',
+              __dirname + '/modules/audit/**/*.entity{.ts,.js}',
+            ],
+            migrations: [__dirname + '/database/migrations-main/*{.ts,.js}'],
+            synchronize: true,
+            logging: configService.get<boolean>('database.logging', false),
+          };
+        }
+
         const synchronize = configService.get<boolean>('database.synchronize', true);
         return {
           name: 'main',
@@ -142,8 +164,6 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
             __dirname + '/modules/auth/**/*.entity{.ts,.js}',
             __dirname + '/modules/audit/**/*.entity{.ts,.js}',
           ],
-          // Dedicated migrations dir for the main connection only (must NOT run the
-          // data-connection migrations, which target session/webhook/message tables).
           migrations: [__dirname + '/database/migrations-main/*{.ts,.js}'],
           synchronize,
           migrationsRun: !synchronize,

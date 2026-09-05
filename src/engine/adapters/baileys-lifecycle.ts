@@ -2,8 +2,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import type { Agent } from 'https';
 import * as qrcode from 'qrcode';
-import { HttpsProxyAgent } from 'https-proxy-agent';
-import { SocksProxyAgent } from 'socks-proxy-agent';
 import type * as BaileysLib from '@whiskeysockets/baileys';
 import type { WASocket } from '@whiskeysockets/baileys';
 import type { ILogger } from '@whiskeysockets/baileys/lib/Utils/logger.js';
