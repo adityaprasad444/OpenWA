@@ -137,6 +137,8 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
           const sslReject = configService.get<boolean>('dataDatabase.sslRejectUnauthorized', false);
           const isVercel = Boolean(process.env.VERCEL || process.env.NOW_BUILDER);
           const synchronize = configService.get<boolean>('database.synchronize', !isVercel);
+          const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
+          const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
           return {
             name: 'main',
             type: 'postgres' as const,
@@ -148,10 +150,10 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
             schema: schema,
             ssl: sslEnabled ? { rejectUnauthorized: sslReject } : false,
             entities: [
-              __dirname + '/modules/auth/**/*.entity{.ts,.js}',
-              __dirname + '/modules/audit/**/*.entity{.ts,.js}',
+              __dirname + '/modules/auth' + entityGlob,
+              __dirname + '/modules/audit' + entityGlob,
             ],
-            migrations: [__dirname + '/database/migrations-main/*{.ts,.js}'],
+            migrations: [__dirname + '/database/migrations-main' + migrationGlob],
             synchronize: isVercel ? false : synchronize,
             connectTimeoutMS: 5000,
             logging: configService.get<boolean>('database.logging', false),
@@ -159,15 +161,17 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
         }
 
         const synchronize = configService.get<boolean>('database.synchronize', true);
+        const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
+        const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
         return {
           name: 'main',
           type: 'better-sqlite3' as const,
           database: configService.get<string>('database.database', './data/main.sqlite'),
           entities: [
-            __dirname + '/modules/auth/**/*.entity{.ts,.js}',
-            __dirname + '/modules/audit/**/*.entity{.ts,.js}',
+            __dirname + '/modules/auth' + entityGlob,
+            __dirname + '/modules/audit' + entityGlob,
           ],
-          migrations: [__dirname + '/database/migrations-main/*{.ts,.js}'],
+          migrations: [__dirname + '/database/migrations-main' + migrationGlob],
           synchronize,
           migrationsRun: !synchronize,
           logging: configService.get<boolean>('database.logging', false),
@@ -186,18 +190,20 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
       dataSourceFactory: createBootDataSource,
       useFactory: (configService: ConfigService) => {
         const dbType = configService.get<'sqlite' | 'postgres'>('dataDatabase.type', 'sqlite');
+        const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
+        const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
         const baseConfig = {
           entities: [
-            __dirname + '/modules/session/**/*.entity{.ts,.js}',
-            __dirname + '/modules/webhook/**/*.entity{.ts,.js}',
-            __dirname + '/modules/message/**/*.entity{.ts,.js}',
-            __dirname + '/modules/template/**/*.entity{.ts,.js}',
-            __dirname + '/engine/**/*.entity{.ts,.js}',
-            __dirname + '/modules/integration/**/*.entity{.ts,.js}',
-            __dirname + '/modules/status-store/**/*.entity{.ts,.js}',
-            __dirname + '/modules/automation/**/*.entity{.ts,.js}',
+            __dirname + '/modules/session' + entityGlob,
+            __dirname + '/modules/webhook' + entityGlob,
+            __dirname + '/modules/message' + entityGlob,
+            __dirname + '/modules/template' + entityGlob,
+            __dirname + '/engine' + entityGlob,
+            __dirname + '/modules/integration' + entityGlob,
+            __dirname + '/modules/status-store' + entityGlob,
+            __dirname + '/modules/automation' + entityGlob,
           ],
-          migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+          migrations: [__dirname + '/database/migrations' + migrationGlob],
           logging: configService.get<boolean>('dataDatabase.logging', false),
         };
 
