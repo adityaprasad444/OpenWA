@@ -192,14 +192,24 @@ export default () => ({
         ? 'postgres'
         : process.env.DATABASE_TYPE || 'sqlite';
 
+    const host = (process.env.DATABASE_HOST || urlParts.host || 'localhost').trim();
+    let username = (process.env.DATABASE_USERNAME || urlParts.username || '').trim();
+    if (host.includes('pooler.supabase.com') && username && !username.includes('.')) {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const match = supabaseUrl.match(/https?:\/\/([^.]+)/);
+      if (match && match[1]) {
+        username = `${username}.${match[1]}`;
+      }
+    }
+
     return {
       type: detectedType,
       database: (process.env.DATABASE_NAME || urlParts.name || './data/openwa.sqlite').trim(),
       name: (process.env.DATABASE_NAME || urlParts.name || 'openwa').trim(),
       schema: (process.env.POSTGRES_SCHEMA || 'public').trim(),
-      host: (process.env.DATABASE_HOST || urlParts.host || 'localhost').trim(),
+      host,
       port: parseInt((process.env.DATABASE_PORT || (urlParts.port ? String(urlParts.port) : '5432')).trim(), 10),
-      username: (process.env.DATABASE_USERNAME || urlParts.username || '').trim(),
+      username,
       password: (process.env.DATABASE_PASSWORD || urlParts.password || '').trim(),
       synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
       logging: process.env.DATABASE_LOGGING === 'true',
