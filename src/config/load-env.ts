@@ -21,7 +21,7 @@ import { clearBlankEnv, recordOsEnvKeys, recordPinnedEnvKeys, BLANK_SHADOWED_ENV
  * body would run too late: ES imports are hoisted and the whole module graph evaluates before the body.
  */
 export function loadEnvironment(): void {
-  const dataDir = process.env.OPENWA_DATA_DIR || path.resolve(process.cwd(), 'data');
+  const dataDir = process.env.OPENWA_DATA_DIR || (process.env.VERCEL ? '/tmp/data' : path.resolve(process.cwd(), 'data'));
   const generatedEnvPath = path.join(dataDir, '.env.generated');
   const userEnvPath = path.resolve(process.cwd(), '.env');
 

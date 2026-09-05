@@ -208,7 +208,9 @@ export default () => ({
       name: (process.env.DATABASE_NAME || urlParts.name || 'openwa').trim(),
       schema: (process.env.POSTGRES_SCHEMA || 'public').trim(),
       host,
-      port: parseInt((process.env.DATABASE_PORT || (urlParts.port ? String(urlParts.port) : '5432')).trim(), 10),
+      port: (process.env.VERCEL || process.env.NOW_BUILDER) && host.includes('pooler.supabase.com')
+        ? 6543
+        : parseInt((process.env.DATABASE_PORT || process.env.POSTGRES_PORT || (urlParts.port ? String(urlParts.port) : '5432')).trim(), 10),
       username,
       password: (process.env.DATABASE_PASSWORD || urlParts.password || '').trim(),
       synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',

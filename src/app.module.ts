@@ -130,15 +130,15 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
+        const isVercel = Boolean(process.env.VERCEL || process.env.NOW_BUILDER);
         const dbType = configService.get<'sqlite' | 'postgres'>('dataDatabase.type', 'sqlite');
+        const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
+        const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
         if (dbType === 'postgres') {
           const schema = configService.get<string>('dataDatabase.schema', 'public');
           const sslEnabled = configService.get<boolean>('dataDatabase.ssl', true);
           const sslReject = configService.get<boolean>('dataDatabase.sslRejectUnauthorized', false);
-          const isVercel = Boolean(process.env.VERCEL || process.env.NOW_BUILDER);
           const synchronize = configService.get<boolean>('database.synchronize', !isVercel);
-          const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
-          const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
           return {
             name: 'main',
             type: 'postgres' as const,
@@ -157,12 +157,13 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
             synchronize: isVercel ? false : synchronize,
             connectTimeoutMS: 5000,
             logging: configService.get<boolean>('database.logging', false),
+            extra: {
+              max: isVercel ? 1 : 5,
+            },
           };
         }
 
         const synchronize = configService.get<boolean>('database.synchronize', true);
-        const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
-        const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
         return {
           name: 'main',
           type: 'better-sqlite3' as const,
@@ -189,6 +190,7 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
       // migrationsRun; the sqlite branches keep the library's default construction + initialize.
       dataSourceFactory: createBootDataSource,
       useFactory: (configService: ConfigService) => {
+        const isVercel = Boolean(process.env.VERCEL || process.env.NOW_BUILDER);
         const dbType = configService.get<'sqlite' | 'postgres'>('dataDatabase.type', 'sqlite');
         const entityGlob = isVercel ? '/**/*.entity.js' : '/**/*.entity{.ts,.js}';
         const migrationGlob = isVercel ? '/*.js' : '/*{.ts,.js}';
@@ -239,7 +241,7 @@ if (dashboardServingEnabled && dashboardBuildPresent) {
               retryAttempts: isVercel ? 1 : 10,
               retryDelay: isVercel ? 500 : 3000,
             extra: {
-              max: configService.get<number>('dataDatabase.poolSize', 10),
+              max: isVercel ? 1 : configService.get<number>('dataDatabase.poolSize', 10),
               // Runtime query/pool timeouts so a stuck query or saturated pool fails fast instead of
               // hanging requests. statement_timeout bounds live runtime queries; the boot migrations
               // reset it to 0 per-transaction via SET LOCAL, so a long

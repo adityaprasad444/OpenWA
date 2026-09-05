@@ -18,7 +18,11 @@ export function writeSecretFile(filePath: string, content: string): void {
     // not silently left world-readable after a rewrite.
     console.warn(`[OpenWA] pre-write chmod 0o600 failed for ${filePath}: ${(error as Error).message}`);
   }
-  writeFileSync(filePath, content, { mode: 0o600 });
+  try {
+    writeFileSync(filePath, content, { mode: 0o600 });
+  } catch (error) {
+    console.warn(`[OpenWA] writeSecretFile failed for ${filePath}: ${(error as Error).message}`);
+  }
   try {
     chmodSync(filePath, 0o600);
   } catch (error) {

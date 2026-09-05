@@ -476,6 +476,11 @@ export class SessionService implements OnModuleDestroy, OnModuleInit, OnApplicat
   }
 
   async start(id: string): Promise<Session> {
+    if (process.env.VERCEL || process.env.NOW_BUILDER) {
+      throw new BadRequestException(
+        `WhatsApp engine sessions cannot be started on Vercel Serverless. Run the OpenWA engine worker on a persistent host (e.g. locally or VPS) to manage session "${id}".`
+      );
+    }
     // Claimed before the engine is launched, never after: launching first and discovering the
     // session belongs elsewhere would already have opened a second connection to the account.
     if (this.ownership && !(await this.ownership.claim(id))) {
